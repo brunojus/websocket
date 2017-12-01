@@ -15,6 +15,37 @@ struct addrinfo hints,*serv_info,host_addr;
 struct sockaddr_storage their_addr;
 FILE* fd;
 
+int start_server(int sockfd)
+	{
+		printf("Server Start Running.........\n");
+		char s[INET6_ADDRSTRLEN];
+		socklen_t sin_size;
+		int newsockfd,pid;
+		while(1)
+		{
+			sin_size=sizeof their_addr;
+			newsockfd=accept(sockfd,(struct sockaddr *)&their_addr,&sin_size);
+
+			if(newsockfd==-1)
+			{
+				perror("accept");
+				continue;
+			}
+
+
+			inet_ntop(their_addr.ss_family,get_in_addr((struct sockaddr *)&their_addr),s,sizeof s);
+
+			printf("Connected client:\n");
+			printf("server:got connection from %s\n",s);
+
+			pid=fork();
+			if(pid==0)
+				break;
+		}
+		return newsockfd;
+	}
+
+
 int directory(char* host,char *path)
 {
 	struct stat st = {0};
