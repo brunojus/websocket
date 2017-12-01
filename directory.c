@@ -1,10 +1,10 @@
-int dir(char* host,char *path)
+int directory(char* host,char *path)
 {
 	struct stat st = {0};
 	char* temporary = NULL;
 	char cwd[1024];
         if (getcwd(cwd, sizeof(cwd)) != NULL)
-					printf("Waiting...\n");
+					printf("..........\n");
         else
            	perror("getcwd() error");
 
@@ -28,11 +28,11 @@ int dir(char* host,char *path)
 		temporary = strtok(NULL,"/");
 	}
 
-	if(temporary == NULL)
+	if(temporary==NULL)
 	{
 	if (stat("Homepage", &st) == -1)
 		{
-			flag = 1;
+			flag=1;
 		}
 
 
@@ -42,7 +42,7 @@ int dir(char* host,char *path)
 	{
 	if (stat(extension, &st) == -1)
 		{
-			flag = 1;
+			flag=1;
 		}
 
 
