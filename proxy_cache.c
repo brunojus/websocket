@@ -309,3 +309,62 @@ void cache(char *buffer)
 
 	return;
 }
+
+int set_server(const char *Host,const char *service)
+	{
+		struct addrinfo *p;
+
+		int sim = 1;
+
+		memset(&hints,0,sizeof hints);
+		hints.ai_family=AF_UNSPEC;
+		hints.ai_socktype=SOCK_STREAM;
+		hints.ai_flags=AI_PASSIVE;
+
+		int sockfd;
+		int i;
+		int n;
+		
+		n = getaddrinfo(Host,service,&hints,&serv_info);
+
+		if(n != 0) {
+			fprintf(stderr,"getaddrinfo %s\n",gai_strerror(n));
+			return 1;
+		}
+
+		for(p=serv_info;p!=NULL;p=p->ai_next) {
+			if((sockfd=socket(p->ai_family,p->ai_socktype,p->ai_protocol))==-1)
+			{
+				perror("server:socket\n");
+				continue;
+			}
+
+			if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &sim, sizeof(int)) == -1)
+			{
+            		perror("setsockopt");
+            		exit(1);
+     		}
+
+			if(bind(sockfd,p->ai_addr,p->ai_addrlen)==-1)
+			{
+				close(sockfd);
+				perror("server:bind");
+				continue;
+			}
+			break;
+		}
+
+		if(p == NULL) {
+			fprintf(stderr,"server: falha ao ligar\n");
+			return 2;
+		}
+		freeaddrinfo(serv_info);
+
+		if(listen(sockfd,BACKLOG)==-1) {
+			perror("listen");
+			exit(1);
+		}
+
+		return sockfd;
+	}
+
