@@ -180,7 +180,15 @@ int directory(char* host,char *path)
 	return flag;
 }
 
-
+void* get_in_addr(struct sockaddr *sa)
+{
+    if(sa->sa_family==AF_INET)
+    {
+        return &(((struct sockaddr_in*)sa)->sin_addr);
+    }
+	
+	return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
 
 int send_file(char* host,char* port,char* path,char* v,int newsockfd)
 {
