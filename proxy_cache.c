@@ -13,6 +13,7 @@
 
 struct addrinfo hints,*serv_info,host_addr;
 struct sockaddr_storage their_addr;
+
 FILE* arq;
 
 
@@ -177,6 +178,29 @@ int directory(char* host,char *path)
 	arq = fopen(extension,"a+");
 	}
 	return flag;
+}
+
+
+
+int send_file(char* host,char* port,char* path,char* v,int newsockfd)
+{
+    struct sockaddr_in host_addr,*servinfo;
+    struct sockaddr_in *p;
+    int newsockfd1,sockfd1,n;
+ 
+    memset(&host_addr, 0, sizeof(host_addr));
+    host_addr.sin_family = AF_INET;
+	host_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	host_addr.sin_port = htons((unsigned short) port);
+    char s[INET6_ADDRSTRLEN];
+    char buffer[1024];
+    int rv;
+ 
+ 
+    bzero((char*)buffer,1024);
+    cache(buffer);
+    send(newsockfd,buffer,strlen(buffer),0);
+ 
 }
 
 int main(int argc,char **argv)
