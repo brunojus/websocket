@@ -114,6 +114,7 @@ int connect_host(char *host, char *port, char *path, char *v, int newsockfd)
 
 	for (p = serv_info; p != NULL; p = p->ai_next)
 	{
+		//addrinfo->ainext : ponteiro para o prox addrinfo
 		if ((sockfd1 = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
 		{
 			perror("client: socket");
@@ -122,6 +123,8 @@ int connect_host(char *host, char *port, char *path, char *v, int newsockfd)
 
 		if (connect(sockfd1, p->ai_addr, p->ai_addrlen) == -1)
 		{
+			//second parameter: addrinfo
+			// se o status da conexao for 0, ok. se for -1, alguma parte nao pode conectar apropriadamente, close
 			close(sockfd1);
 			perror("client: connect");
 			continue;
@@ -158,6 +161,7 @@ int connect_host(char *host, char *port, char *path, char *v, int newsockfd)
 		do
 		{
 			bzero((char *)buffer, 500);
+			//receive data froms server and store at buffer
 			n = recv(sockfd1, buffer, 500, 0);
 			fprintf(arq, "%s", buffer);
 
