@@ -1,19 +1,20 @@
-#include<stdio.h>
-#include<errno.h>
-#include<stdlib.h>
-#include<sys/stat.h>
-#include<sys/socket.h>
-#include<string.h>
-#include<unistd.h>
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <string.h>
+#include <unistd.h>
 #include <netdb.h>
-#include<sys/types.h>
-#include<netinet/in.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 
 #define BACKLOG 5
 
 struct addrinfo hints,*serv_info,host_addr;
 struct sockaddr_storage their_addr;
-FILE* fd;
+FILE* arq;
+
 
 
 void request(int newsockfd)
@@ -163,7 +164,7 @@ int directory(char* host,char *path)
 		}
 
 
-		fd = fopen("Homepage","a+");
+		arq = fopen("Homepage","a+");
 	}
 	else
 	{
@@ -173,7 +174,7 @@ int directory(char* host,char *path)
 		}
 
 
-	fd = fopen(extension,"a+");
+	arq = fopen(extension,"a+");
 	}
 	return flag;
 }
@@ -184,11 +185,23 @@ int main(int argc,char **argv)
 
 	if (argc<2)
 	{
-		fprintf (stderr,"Indique a porta para o proxy\n");
+		fprintf (stderr,"Indique a porta para o proxy:\n");
 		exit(1);
 	}
 
 	sockfd=set_server(NULL,argv[1]);
 	newsockfd=start_server(sockfd);
 	request(newsockfd);
+}
+
+void cache(char* buffer) {
+	char temporary[128];
+	while(1) {
+
+		if((fgets(temporary,128,arq)) == NULL) break;
+		strcat(buffer,temporary);
+	}
+
+	return;
+
 }
