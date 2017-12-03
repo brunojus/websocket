@@ -1,0 +1,12 @@
+HTTP/1.1 401 Unauthorized
+Server: nginx
+Date: Sun, 03 Dec 2017 22:29:56 GMT
+Content-Type: text/html; charset=UTF-8
+Content-Length: 131
+Connection: close
+Www-Authenticate: Swift realm="AUTH_05f06ca986b54d6e9c5df94927ccf7fc"
+WWW-Authenticate: Keystone uri='https://auth.s3.globoi.com:35357/v3/'
+X-Trans-Id: txf70adf3438bd416cb75a6-005a247ac6
+X-Openstack-Request-Id: txf70adf3438bd416cb75a6-005a247ac6
+
+<html><h1>Unauthorized</h1><p>This server could not verify that you are authorized to access the document you requested.</p></html>

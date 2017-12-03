@@ -1,0 +1,10 @@
+HTTP/1.1 412 Precondition Failed
+Server: nginx
+Date: Sun, 03 Dec 2017 22:29:47 GMT
+Content-Type: text/html; charset=UTF-8
+Content-Length: 7
+Connection: close
+X-Trans-Id: tx988ee8b2bdda493594685-005a247a68
+X-Openstack-Request-Id: tx988ee8b2bdda493594685-005a247a68
+
+Bad URL

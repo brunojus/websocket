@@ -16,6 +16,15 @@ struct sockaddr_storage their_addr;
 
 FILE *arq;
 
+void* get_in_addr(struct sockaddr *sa)
+{
+	if (sa->sa_family == AF_INET)
+	{
+		return &(((struct sockaddr_in *)sa)->sin_addr);
+	}
+	return &(((struct sockaddr_in6 *)sa)->sin6_addr);
+}
+
 void request(int newsockfd)
 {
 
@@ -94,7 +103,7 @@ void request(int newsockfd)
 	}
 }
 
-int connect_host(char *host, char *port, char *path, char *v, int newsockfd)
+void connect_host(char *host, char *port, char *path, char *v, int newsockfd)
 {
 	struct addrinfo *p;
 	int newsocket1, sockfd1, n;
@@ -107,7 +116,7 @@ int connect_host(char *host, char *port, char *path, char *v, int newsockfd)
 	int rv;
 	if ((rv = getaddrinfo(host, port, &host_addr, &serv_info)) != 0)
 	{
-		
+
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
 	}
@@ -253,15 +262,7 @@ int directory(char *host, char *path)
 	return flag;
 }
 
-void *get_in_addr(struct sockaddr *sa)
-{
-	if (sa->sa_family == AF_INET)
-	{
-		return &(((struct sockaddr_in *)sa)->sin_addr);
-	}
 
-	return &(((struct sockaddr_in6 *)sa)->sin6_addr);
-}
 
 int send_file(char *host, char *port, char *path, char *v, int newsockfd)
 {
@@ -310,61 +311,64 @@ void cache(char *buffer)
 	return;
 }
 
-int set_server(const char *Host,const char *service)
+int set_server(const char *Host, const char *service)
+{
+	struct addrinfo *p;
+
+	int sim = 1;
+
+	memset(&hints, 0, sizeof hints);
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_PASSIVE;
+
+	int sockfd;
+	int i;
+	int n;
+
+	n = getaddrinfo(Host, service, &hints, &serv_info);
+
+	if (n != 0)
 	{
-		struct addrinfo *p;
+		fprintf(stderr, "getaddrinfo %s\n", gai_strerror(n));
+		return 1;
+	}
 
-		int sim = 1;
-
-		memset(&hints,0,sizeof hints);
-		hints.ai_family=AF_UNSPEC;
-		hints.ai_socktype=SOCK_STREAM;
-		hints.ai_flags=AI_PASSIVE;
-
-		int sockfd;
-		int i;
-		int n;
-		
-		n = getaddrinfo(Host,service,&hints,&serv_info);
-
-		if(n != 0) {
-			fprintf(stderr,"getaddrinfo %s\n",gai_strerror(n));
-			return 1;
+	for (p = serv_info; p != NULL; p = p->ai_next)
+	{
+		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
+		{
+			perror("server:socket\n");
+			continue;
 		}
 
-		for(p=serv_info;p!=NULL;p=p->ai_next) {
-			if((sockfd=socket(p->ai_family,p->ai_socktype,p->ai_protocol))==-1)
-			{
-				perror("server:socket\n");
-				continue;
-			}
-
-			if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &sim, sizeof(int)) == -1)
-			{
-            		perror("setsockopt");
-            		exit(1);
-     		}
-
-			if(bind(sockfd,p->ai_addr,p->ai_addrlen)==-1)
-			{
-				close(sockfd);
-				perror("server:bind");
-				continue;
-			}
-			break;
-		}
-
-		if(p == NULL) {
-			fprintf(stderr,"server: falha ao ligar\n");
-			return 2;
-		}
-		freeaddrinfo(serv_info);
-
-		if(listen(sockfd,BACKLOG)==-1) {
-			perror("listen");
+		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &sim, sizeof(int)) == -1)
+		{
+			perror("setsockopt");
 			exit(1);
 		}
 
-		return sockfd;
+		if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1)
+		{
+			close(sockfd);
+			perror("server:bind");
+			continue;
+		}
+		break;
 	}
 
+	if (p == NULL)
+	{
+		fprintf(stderr, "server: falha ao ligar\n");
+		return 2;
+	}
+	freeaddrinfo(serv_info);
+
+	if (listen(sockfd, BACKLOG) == -1)
+	{
+		perror("listen");
+		exit(1);
+	}
+
+	return sockfd;
+}
