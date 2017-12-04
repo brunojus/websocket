@@ -8,15 +8,44 @@
 #include <netdb.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include "blacklist.h"
 
+#define BUFFER_SIZE 1500 //maximum tcp packet size
 #define BACKLOG 5
+#define not_blacklisted 1
 
 struct addrinfo hints, *serv_info, host_addr;
 struct sockaddr_storage their_addr;
 
-FILE *arq;
+FILE *fd;
 
-void* get_in_addr(struct sockaddr *sa)
+int verifyDenyTerm(const char* buffer) {
+	//returns -1 if found a deny term
+	// returns 1 otherwise
+	
+	FILE* fterms;
+	fterms = fopen ("denyTerms.txt", "r");
+	char term[256];
+	
+	if (fterms == NULL) { //arquivo nao existe
+		printf("File denyTerms.txt not found\n");
+	}
+	else { //verifying whitelist
+		while (fgets(term, sizeof(term), fterms)) {
+			int size = strlen (term);
+			term[size-1] = '\0'; //apagar o \n do fgets
+			if (strstr(buffer,term)) { //TERM FOUND IN BUFFER
+				printf("Deny Term found: %s\n", term);
+				return -1;
+			}
+		}
+		fclose (fterms);
+	}
+	printf("No deny terms found\n");
+	return 1;
+}
+
+void *get_in_addr(struct sockaddr *sa)
 {
 	if (sa->sa_family == AF_INET)
 	{
@@ -29,19 +58,21 @@ void request(int newsockfd)
 {
 
 	char s[INET6_ADDRSTRLEN];
-	char buffer[1024];
+	char buffer[BUFFER_SIZE];
 
 	int flag = 0, n, i;
 	char t1[512], t2[512], t3[16];
 	char *temporary = NULL;
 	char *port;
-	bzero(buffer, 1024);
-	recv(newsockfd, buffer, 1024, 0);
+	bzero(buffer, BUFFER_SIZE);
+	recv(newsockfd, buffer, BUFFER_SIZE, 0);
 	sscanf(buffer, "%s %s %s", t1, t2, t3);
 
 	printf("%s\n\n\n\n\n\n\n\n\n", t1);
 	printf("%s\n\n\n\n\n\n\n\n\n", t2);
 	printf("%s\n\n\n\n\n\n\n\n\n", t3);
+
+	//TODO: verify if blacklisted
 
 	if (((strncmp(t1, "GET", 3) == 0)) && ((strncmp(t3, "HTTP/1.1", 8) == 0) || (strncmp(t3, "HTTP/1.0", 8) == 0)) && (strncmp(t2, "http://", 7) == 0))
 	{
@@ -153,32 +184,36 @@ void connect_host(char *host, char *port, char *path, char *v, int newsockfd)
 	sprintf(buffer, "\nConnected to %s  IP - %s\n", host, s);
 	printf("\n%s\n", buffer);
 
-	if (path != NULL)
-		sprintf(buffer, "GET /%s %s\r\nHost: %s\r\nConnection: close\r\n\r\n", path, v, host);
-	else
-		sprintf(buffer, "GET / %s\r\nHost: %s\r\nConnection: close\r\n\r\n", v, host);
-	// sending:
-
-	n = send(sockfd1, buffer, strlen(buffer), 0);
-
-	printf("\n%s\n", buffer);
-
-	if (n < 0)
-		error("Error writing to socket");
-	else
+	if (not_blacklisted == verifyDenyTerm(buffer))
 	{
-		do
-		{
-			bzero((char *)buffer, 500);
-			//receive data froms server and store at buffer
-			n = recv(sockfd1, buffer, 500, 0);
-			fprintf(arq, "%s", buffer);
 
-			if (n < 0)
-				error("Error reading from socket");
-			else
-				send(newsockfd, buffer, strlen(buffer), 0);
-		} while (n > 0);
+		if (path != NULL)
+			sprintf(buffer, "GET /%s %s\r\nHost: %s\r\nConnection: close\r\n\r\n", path, v, host);
+		else
+			sprintf(buffer, "GET / %s\r\nHost: %s\r\nConnection: close\r\n\r\n", v, host);
+		// sending:
+
+		n = send(sockfd1, buffer, strlen(buffer), 0);
+
+		printf("\n%s\n", buffer);
+
+		if (n < 0)
+			error("Error writing to socket");
+		else
+		{
+			do
+			{
+				bzero((char *)buffer, 500);
+				//receive data froms server and store at buffer
+				n = recv(sockfd1, buffer, 500, 0);
+				fprintf(fd, "%s", buffer);
+
+				if (n < 0)
+					error("Error reading from socket");
+				else
+					send(newsockfd, buffer, strlen(buffer), 0);
+			} while (n > 0);
+		}
 	}
 }
 
@@ -248,7 +283,7 @@ int directory(char *host, char *path)
 			flag = 1;
 		}
 
-		arq = fopen("Homepage", "a+");
+		fd = fopen("Homepage", "a+");
 	}
 	else
 	{
@@ -257,12 +292,10 @@ int directory(char *host, char *path)
 			flag = 1;
 		}
 
-		arq = fopen(extension, "a+");
+		fd = fopen(extension, "a+");
 	}
 	return flag;
 }
-
-
 
 int send_file(char *host, char *port, char *path, char *v, int newsockfd)
 {
@@ -282,28 +315,13 @@ int send_file(char *host, char *port, char *path, char *v, int newsockfd)
 	send(newsockfd, buffer, strlen(buffer), 0);
 }
 
-int main(int argc, char **argv)
-{
-	int sockfd, newsockfd;
-
-	if (argc < 2)
-	{
-		fprintf(stderr, "Indique a porta para o proxy:\n");
-		exit(1);
-	}
-
-	sockfd = set_server(NULL, argv[1]);
-	newsockfd = start_server(sockfd);
-	request(newsockfd);
-}
-
 void cache(char *buffer)
 {
 	char temporary[128];
 	while (1)
 	{
 
-		if ((fgets(temporary, 128, arq)) == NULL)
+		if ((fgets(temporary, 128, fd)) == NULL)
 			break;
 		strcat(buffer, temporary);
 	}
@@ -371,4 +389,19 @@ int set_server(const char *Host, const char *service)
 	}
 
 	return sockfd;
+}
+
+int main(int argc, char **argv)
+{
+	int sockfd, newsockfd;
+
+	if (argc < 2)
+	{
+		fprintf(stderr, "Indique a porta para o proxy:\n");
+		exit(1);
+	}
+
+	sockfd = set_server(NULL, argv[1]);
+	newsockfd = start_server(sockfd);
+	request(newsockfd);
 }
