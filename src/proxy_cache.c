@@ -19,28 +19,104 @@ struct sockaddr_storage their_addr;
 
 FILE *fd;
 
-int verifyDenyTerm(const char* buffer) {
+int verifyWhiteAndBlackList(const char *buffer)
+{
+	//Returns 1 case in whitelist
+	//Returns -1 case in blacklist
+	//0 otherwise
+
+	char *buffer_new = (char *)calloc(BUFFER_SIZE, sizeof(char));
+
+	memcpy(buffer_new, buffer, BUFFER_SIZE);
+	char *url = strstr(buffer_new, "GET ");
+
+	if (url != NULL)
+	{
+		url += sizeof("GET ") - 1;
+		char *end = strstr(url, "HTTP") - 1;
+		url[end - url] = '\0';
+	}
+	else
+	{
+		printf("url==NULL and buffer_new=%s\n", buffer_new);
+		return 0;
+	}
+
+	FILE *white_file;
+	FILE *black_file;
+	black_file = fopen("blacklist.txt", "r");
+	white_file = fopen("whitelist.txt", "r");
+	char line[256];
+
+	if (white_file == NULL)
+	{ //arquivo nao existe
+		printf("Cant found whitelist.txt\n");
+	}
+	else
+	{ //verifica white list
+		while (fgets(line, sizeof(line), white_file))
+		{
+			int size = strlen(line);
+			line[size - 1] = '\0';
+			if (strstr(url, line))
+			{ //terms is in whitelist
+				printf("Term (whitelist): %s\n", line);
+				free(buffer_new);
+				return 1;
+			}
+		}
+		fclose(white_file);
+	}
+
+	if (black_file == NULL)
+	{
+		printf("Cant found blacklist.tx\n");
+	}
+	else
+	{
+		while (fgets(line, sizeof(line), black_file))
+		{
+			int size = strlen(line);
+			line[size - 1] = '\0';
+			if (strstr(url, line))
+			{
+				printf("Term (blacklist): %s\n", line);
+				free(buffer_new);
+				return -1;
+			}
+		}
+	}
+
+	free(buffer_new);
+	return 1;
+}
+
+int verifyDenyTerm(const char *buffer)
+{
 	//returns -1 if found a deny term
 	// returns 1 otherwise
 
-	FILE  *file_terms;
-	file_terms = fopen ("denyTerms.txt", "r");
+	FILE *file_terms;
+	file_terms = fopen("denyTerms.txt", "r");
 	char term[256];
 
-
-	if (!file_terms ) { //arquivo nao existe
+	if (!file_terms)
+	{ //arquivo nao existe
 		printf("File denyTerms.txt not found\n");
 	}
-	else {
-		while (fgets(term, sizeof(term), file_terms)) {
-			int size = strlen (term);
-			term[size-1] = '\0'; //apagar o \n do fgets
-			if (strstr(buffer,term)) { //TERM FOUND IN BUFFER
+	else
+	{
+		while (fgets(term, sizeof(term), file_terms))
+		{
+			int size = strlen(term);
+			term[size - 1] = '\0';
+			if (strstr(buffer, term))
+			{ //termo do arquvo encontrado no buffer
 				printf("Deny Term found: %s\n", term);
 				return -1;
 			}
 		}
-		fclose (file_terms);
+		fclose(file_terms);
 	}
 	printf("No deny terms found\n");
 	return 1;
@@ -75,63 +151,69 @@ void request(int newsockfd)
 
 	//TODO: verify if blacklisted
 
-	if (((strncmp(t1, "GET", 3) == 0)) && ((strncmp(t3, "HTTP/1.1", 8) == 0) || (strncmp(t3, "HTTP/1.0", 8) == 0)) && (strncmp(t2, "http://", 7) == 0))
+	if (verifyWhiteAndBlackList(buffer) == not_blacklisted)
 	{
-		strcpy(t1, t2);
-		flag = 0;
-		for (i = 7; i < strlen(t2); i++)
+		if (((strncmp(t1, "GET", 3) == 0)) && ((strncmp(t3, "HTTP/1.1", 8) == 0) || (strncmp(t3, "HTTP/1.0", 8) == 0)) && (strncmp(t2, "http://", 7) == 0))
 		{
-			if (t2[i] == ':')
+			strcpy(t1, t2);
+			flag = 0;
+			for (i = 7; i < strlen(t2); i++)
 			{
-				flag = 1;
-				break;
+				if (t2[i] == ':')
+				{
+					flag = 1;
+					break;
+				}
+			}
+			temporary = strtok(t2, "//");
+
+			if (flag == 0)
+			{
+				port = "80";
+				temporary = strtok(NULL, "/");
+			}
+			else
+			{
+				temporary = strtok(NULL, ":");
+			}
+			sprintf(t2, "%s", temporary);
+
+			printf("host = %s", t2);
+
+			if (flag == 1)
+			{
+				temporary = strtok(NULL, "/");
+				port = temporary;
+			}
+
+			strcat(t1, "^]");
+			temporary = strtok(t1, "//");
+			temporary = strtok(NULL, "/");
+
+			if (temporary != NULL)
+				temporary = strtok(NULL, "^]");
+			printf("\npath = %s\nPort = %s\n", temporary, port);
+			i = directory(t2, temporary);
+
+			if (i == 1)
+			{
+				printf("From Host\n");
+				connect_host(t2, port, temporary, t3, newsockfd);
+			}
+			else
+			{
+				printf("From cache\n");
+				send_file(t2, port, temporary, t3, newsockfd);
 			}
 		}
-		temporary = strtok(t2, "//");
-
-		if (flag == 0)
-		{
-			port = "80";
-			temporary = strtok(NULL, "/");
-		}
 		else
 		{
-			temporary = strtok(NULL, ":");
-		}
-		sprintf(t2, "%s", temporary);
-
-		printf("host = %s", t2);
-
-		if (flag == 1)
-		{
-			temporary = strtok(NULL, "/");
-			port = temporary;
-		}
-
-		strcat(t1, "^]");
-		temporary = strtok(t1, "//");
-		temporary = strtok(NULL, "/");
-
-		if (temporary != NULL)
-			temporary = strtok(NULL, "^]");
-		printf("\npath = %s\nPort = %s\n", temporary, port);
-		i = directory(t2, temporary);
-
-		if (i == 1)
-		{
-			printf("From Host\n");
-			connect_host(t2, port, temporary, t3, newsockfd);
-		}
-		else
-		{
-			printf("From cache\n");
-			send_file(t2, port, temporary, t3, newsockfd);
+			send(newsockfd, "400 : BAD REQUEST\nONLY HTTP REQUESTS ALLOWED", 44, 0);
 		}
 	}
-
 	else
 	{
-		send(newsockfd, "400 : BAD REQUEST\nONLY HTTP REQUESTS ALLOWED", 44, 0);
+		//TODO url blacklisted. Show html?
 	}
 }
 
