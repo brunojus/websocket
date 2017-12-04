@@ -23,16 +23,16 @@ int verifyDenyTerm(const char* buffer) {
 	//returns -1 if found a deny term
 	// returns 1 otherwise
 
-	FILE  *fterms;
-	fterms = fopen ("denyTerms.txt", "r");
+	FILE  *file_terms;
+	file_terms = fopen ("denyTerms.txt", "r");
 	char term[256];
 
 
-	if (!fterms ) { //arquivo nao existe
+	if (!file_terms ) { //arquivo nao existe
 		printf("File denyTerms.txt not found\n");
 	}
-	else { //verifying whitelist
-		while (fgets(term, sizeof(term), fterms)) {
+	else {
+		while (fgets(term, sizeof(term), file_terms)) {
 			int size = strlen (term);
 			term[size-1] = '\0'; //apagar o \n do fgets
 			if (strstr(buffer,term)) { //TERM FOUND IN BUFFER
@@ -40,7 +40,7 @@ int verifyDenyTerm(const char* buffer) {
 				return -1;
 			}
 		}
-		fclose (fterms);
+		fclose (file_terms);
 	}
 	printf("No deny terms found\n");
 	return 1;
