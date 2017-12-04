@@ -22,12 +22,13 @@ FILE *fd;
 int verifyDenyTerm(const char* buffer) {
 	//returns -1 if found a deny term
 	// returns 1 otherwise
-	
-	FILE* fterms;
+
+	FILE  *fterms;
 	fterms = fopen ("denyTerms.txt", "r");
 	char term[256];
-	
-	if (fterms == NULL) { //arquivo nao existe
+
+
+	if (!fterms ) { //arquivo nao existe
 		printf("File denyTerms.txt not found\n");
 	}
 	else { //verifying whitelist
