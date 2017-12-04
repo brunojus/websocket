@@ -8,10 +8,10 @@
 #include <netdb.h>
 #include <sys/types.h>
 #include <netinet/in.h>
-#include "blacklist.h"
+
 
 #define BUFFER_SIZE 1500 //maximum tcp packet size
-#define BACKLOG 5
+#define BACKLOG 5 // quantidade de requests até trocar os logs
 #define not_blacklisted 1
 
 struct addrinfo hints, *serv_info, host_addr;
@@ -96,8 +96,11 @@ int verifyDenyTerm(const char *buffer)
 	//returns -1 if found a deny term
 	// returns 1 otherwise
 
-	FILE *file_terms;
-	file_terms = fopen("denyTerms.txt", "r");
+	FILE *file_terms = NULL;
+	file_terms = fopen("/home/bruno/trabalho_tr2/src/denyTerms.txt", "r");
+
+
+
 	char term[256];
 
 	if (!file_terms)
@@ -131,6 +134,7 @@ void *get_in_addr(struct sockaddr *sa)
 	return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 
+// t1= verbo http, t2 = url, t3 = versão do protocolo
 void request(int newsockfd)
 {
 
@@ -145,11 +149,141 @@ void request(int newsockfd)
 	recv(newsockfd, buffer, BUFFER_SIZE, 0);
 	sscanf(buffer, "%s %s %s", t1, t2, t3);
 
-	printf("%s\n\n\n\n\n\n\n\n\n", t1);
-	printf("%s\n\n\n\n\n\n\n\n\n", t2);
-	printf("%s\n\n\n\n\n\n\n\n\n", t3);
 
 	//TODO: verify if blacklisted
+	void connect_host(char *host, char *port, char *path, char *v, int newsockfd)
+	{
+		struct addrinfo *p;
+		int newsocket1, sockfd1, n;
+		memset(&host_addr, 0, sizeof(host_addr));
+		host_addr.ai_family = AF_UNSPEC;
+		host_addr.ai_socktype = SOCK_STREAM;
+		char s[INET6_ADDRSTRLEN];
+		char buffer[1024];
+
+		int rv;
+		if ((rv = getaddrinfo(host, port, &host_addr, &serv_info)) != 0)
+		{
+
+			fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+			return 1;
+		}
+
+		for (p = serv_info; p != NULL; p = p->ai_next)
+		{
+			//addrinfo->ainext : ponteiro para o prox addrinfo
+			if ((sockfd1 = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
+			{
+				perror("client: socket");
+				continue;
+			}
+
+			if (connect(sockfd1, p->ai_addr, p->ai_addrlen) == -1)
+			{
+				//second parameter: addrinfo
+				// se o status da conexao for 0, ok. se for -1, alguma parte nao pode conectar apropriadamente, close
+				close(sockfd1);
+				perror("client: connect");
+				continue;
+			}
+
+			break;
+		}
+
+		if (p == NULL)
+		{
+			fprintf(stderr, "client: failed to connect\n");
+			return;
+		}
+
+		inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
+
+		sprintf(buffer, "\nConnected to %s  IP - %s\n", host, s);
+
+
+		if (not_blacklisted == verifyDenyTerm(host))
+		{
+
+			if (path != NULL)
+				sprintf(buffer, "GET /%s %s\r\nHost: %s\r\nConnection: close\r\n\r\n", path, v, host);
+			else
+				sprintf(buffer, "GET / %s\r\nHost: %s\r\nConnection: close\r\n\r\n", v, host);
+			// sending:
+
+			n = send(sockfd1, buffer, strlen(buffer), 0);
+
+			printf("\n%s\n", buffer);
+
+			if (n < 0)
+				perror("Error writing to socket");
+			else
+			{
+				do
+				{
+					bzero((char *)buffer, 500);
+					//receive data froms server and store at buffer
+					n = recv(sockfd1, buffer, 500, 0);
+					fprintf(fd, "%s", buffer);
+
+					if (n < 0)
+						perror("Error reading from socket");
+					else
+						send(newsockfd, buffer, strlen(buffer), 0);
+				} while (n > 0);
+			}
+		}
+	}
+
+	int directory(char *host, char *path)
+	{
+		struct stat st = {0};
+		char *temporary = NULL;
+		char cwd[1024];
+		if (getcwd(cwd, sizeof(cwd)) != NULL)
+			printf("..........\n");
+		else
+			perror("getcwd() error");
+
+		mkdir("cache", 0700);
+		chdir("cache");
+		mkdir(host, 0700);
+		chdir(host);
+		temporary = strtok(path, "/");
+		char *extension;
+		int flag = 0;
+
+		while (temporary != NULL)
+		{
+			if ((stat(temporary, &st) == -1) && (temporary != NULL))
+			{
+				mkdir(temporary, 0700);
+				flag = 1;
+			}
+			chdir(temporary);
+			extension = temporary;
+			temporary = strtok(NULL, "/");
+		}
+
+		if (temporary == NULL)
+		{
+			if (stat("Homepage", &st) == -1)
+			{
+				flag = 1;
+			}
+
+			fd = fopen("Homepage", "a+");
+		}
+		else
+		{
+			if (stat(extension, &st) == -1)
+			{
+				flag = 1;
+			}
+
+			fd = fopen(extension, "a+");
+		}
+		return flag;
+	}
 
 	if (verifyWhiteAndBlackList(buffer) == not_blacklisted)
 	{
@@ -193,6 +327,7 @@ void request(int newsockfd)
 			if (temporary != NULL)
 				temporary = strtok(NULL, "^]");
 			printf("\npath = %s\nPort = %s\n", temporary, port);
+
 			i = directory(t2, temporary);
 
 			if (i == 1)
@@ -217,88 +352,7 @@ void request(int newsockfd)
 	}
 }
 
-void connect_host(char *host, char *port, char *path, char *v, int newsockfd)
-{
-	struct addrinfo *p;
-	int newsocket1, sockfd1, n;
-	memset(&host_addr, 0, sizeof(host_addr));
-	host_addr.ai_family = AF_UNSPEC;
-	host_addr.ai_socktype = SOCK_STREAM;
-	char s[INET6_ADDRSTRLEN];
-	char buffer[1024];
 
-	int rv;
-	if ((rv = getaddrinfo(host, port, &host_addr, &serv_info)) != 0)
-	{
-
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-		return 1;
-	}
-
-	for (p = serv_info; p != NULL; p = p->ai_next)
-	{
-		//addrinfo->ainext : ponteiro para o prox addrinfo
-		if ((sockfd1 = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
-		{
-			perror("client: socket");
-			continue;
-		}
-
-		if (connect(sockfd1, p->ai_addr, p->ai_addrlen) == -1)
-		{
-			//second parameter: addrinfo
-			// se o status da conexao for 0, ok. se for -1, alguma parte nao pode conectar apropriadamente, close
-			close(sockfd1);
-			perror("client: connect");
-			continue;
-		}
-
-		break;
-	}
-
-	if (p == NULL)
-	{
-		fprintf(stderr, "client: failed to connect\n");
-		return;
-	}
-
-	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
-
-	sprintf(buffer, "\nConnected to %s  IP - %s\n", host, s);
-	printf("\n%s\n", buffer);
-
-	if (not_blacklisted == verifyDenyTerm(buffer))
-	{
-
-		if (path != NULL)
-			sprintf(buffer, "GET /%s %s\r\nHost: %s\r\nConnection: close\r\n\r\n", path, v, host);
-		else
-			sprintf(buffer, "GET / %s\r\nHost: %s\r\nConnection: close\r\n\r\n", v, host);
-		// sending:
-
-		n = send(sockfd1, buffer, strlen(buffer), 0);
-
-		printf("\n%s\n", buffer);
-
-		if (n < 0)
-			error("Error writing to socket");
-		else
-		{
-			do
-			{
-				bzero((char *)buffer, 500);
-				//receive data froms server and store at buffer
-				n = recv(sockfd1, buffer, 500, 0);
-				fprintf(fd, "%s", buffer);
-
-				if (n < 0)
-					error("Error reading from socket");
-				else
-					send(newsockfd, buffer, strlen(buffer), 0);
-			} while (n > 0);
-		}
-	}
-}
 
 int start_server(int sockfd)
 {
@@ -329,55 +383,19 @@ int start_server(int sockfd)
 	return newsockfd;
 }
 
-int directory(char *host, char *path)
+
+void cache(char *buffer)
 {
-	struct stat st = {0};
-	char *temporary = NULL;
-	char cwd[1024];
-	if (getcwd(cwd, sizeof(cwd)) != NULL)
-		printf("..........\n");
-	else
-		perror("getcwd() error");
-
-	mkdir("cache", 0700);
-	chdir("cache");
-	mkdir(host, 0700);
-	chdir(host);
-	temporary = strtok(path, "/");
-	char *extension;
-	int flag = 0;
-
-	while (temporary != NULL)
+	char temporary[128];
+	while (1)
 	{
-		if ((stat(temporary, &st) == -1) && (temporary != NULL))
-		{
-			mkdir(temporary, 0700);
-			flag = 1;
-		}
-		chdir(temporary);
-		extension = temporary;
-		temporary = strtok(NULL, "/");
+
+		if ((fgets(temporary, 128, fd)) == NULL)
+			break;
+		strcat(buffer, temporary);
 	}
 
-	if (temporary == NULL)
-	{
-		if (stat("Homepage", &st) == -1)
-		{
-			flag = 1;
-		}
-
-		fd = fopen("Homepage", "a+");
-	}
-	else
-	{
-		if (stat(extension, &st) == -1)
-		{
-			flag = 1;
-		}
-
-		fd = fopen(extension, "a+");
-	}
-	return flag;
+	return;
 }
 
 int send_file(char *host, char *port, char *path, char *v, int newsockfd)
@@ -398,19 +416,7 @@ int send_file(char *host, char *port, char *path, char *v, int newsockfd)
 	send(newsockfd, buffer, strlen(buffer), 0);
 }
 
-void cache(char *buffer)
-{
-	char temporary[128];
-	while (1)
-	{
 
-		if ((fgets(temporary, 128, fd)) == NULL)
-			break;
-		strcat(buffer, temporary);
-	}
-
-	return;
-}
 
 int set_server(const char *Host, const char *service)
 {
