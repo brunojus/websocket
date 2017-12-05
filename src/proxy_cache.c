@@ -111,8 +111,6 @@ int verifyDenyTerm(const char *buffer)
 	FILE *file_terms = NULL;
 	file_terms = fopen("C:/Users/Bruno/Desktop/UnB/UnB - 2 2017/Teleinformática e redes 2/Trab/websocket/src/denyTerms.txt", "r");
 
-
-
 	char term[256];
 
 	if (!file_terms)
@@ -128,6 +126,7 @@ int verifyDenyTerm(const char *buffer)
 			if (strstr(buffer, term))
 			{ //termo do arquvo encontrado no buffer
 				printf("Deny Term found: %s\n", term);
+				deniedLogWrite(fgets(term, sizeof(term), file_terms));
 				return -1;
 			}
 		}
@@ -135,6 +134,45 @@ int verifyDenyTerm(const char *buffer)
 	}
 	printf("No deny terms found\n");
 	return 1;
+}
+
+void deniedLogWrite(char* term){
+	FILE* denied_log;
+	denied_log = fopen ("websocket/denied_log.txt", "a"); 
+	if (denied_log == NULL) {
+		printf("Error in black_log file\n");
+	} else
+	{
+		fprintf(denied_log, "Contains denied term: %s\n",term );
+		fclose(denied_log);
+	}
+}
+
+void blackLogtWrite(const char* buffer) {
+	FILE* black_log;
+	black_log = fopen ("websocket/black_log.txt", "a");
+	if (black_log == NULL) {
+		printf("Error in black_log file\n");
+	} else
+	{
+		fprintf(black_log, "Tried to request url from blacklist: %s", buffer);
+		fclose(black_log);
+	}
+}
+
+void whiteLogWrite(const char* buffer) {
+	FILE* log_white;
+	log_white = fopen ("websocket/white_log.txt", "a");
+	
+	if (log_white == NULL) 
+	{
+		printf("Error in log_white file\n");
+	} else
+	{
+		fprintf(log_white, "Tried to request url from blacklist: %s", buffer);
+		fclose(log_white);	
+	}
+	
 }
 
 /*! \fn void *get_in_addr(struct sockaddr *sa)
