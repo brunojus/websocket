@@ -27,7 +27,9 @@ Configuração do Navegador Firefox:
        Port = tem que informar a porta que foi selecionada para executar o script.
     
     6) Clique em OK.
+```
+Durante a execução, é necessário acessar o navegador escolhido e digitar os termos ou URLs desejadas,
+para conferir as filtragens e armazenamento em cache. Alguns logs serão transmitidos para facilitar
+o acompanhamento.
 
-
-
-
+Vale ressaltar que o proxy desenvolvido não abrange sites HTTPS, apenas HTTP.
