@@ -19,6 +19,12 @@ struct sockaddr_storage their_addr;
 
 FILE *fd;
 
+/*! \fn int verifyWhiteAndBlackList(const char *buffer)
+		\brief Retorna um inteiro indicando se está na blacklist (-1), se está na whitelist(1), ou em nenhuma (0)
+
+		\param buffer Buffer da dados que será comparado ao arquivo de blacklst e whitelist
+*/
+
 int verifyWhiteAndBlackList(const char *buffer)
 {
 	//Returns 1 case in whitelist
@@ -91,6 +97,12 @@ int verifyWhiteAndBlackList(const char *buffer)
 	return 1;
 }
 
+/*! \fn int verifyDenyTerm(const char *buffer)
+		\brief Retorna um inteiro indicando se o buffer contém um deny term
+
+		\param buffer Buffer da dados que será comparado ao arquivo de deny terms
+*/
+
 int verifyDenyTerm(const char *buffer)
 {
 	//returns -1 if found a deny term
@@ -124,6 +136,12 @@ int verifyDenyTerm(const char *buffer)
 	printf("No deny terms found\n");
 	return 1;
 }
+
+/*! \fn void *get_in_addr(struct sockaddr *sa)
+		\brief Retorna um inteiro indicando se o buffer contém um deny term
+
+		\param sa Buffer da dados que será comparado ao arquivo de deny terms
+*/
 
 void *get_in_addr(struct sockaddr *sa)
 {
