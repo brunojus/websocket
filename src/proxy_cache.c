@@ -67,6 +67,7 @@ int verifyWhiteAndBlackList(const char *buffer)
 			if (strstr(url, line))
 			{ //terms is in whitelist
 				printf("Term (whitelist): %s\n", line);
+				whiteLogWrite(buffer);
 				free(buffer_new);
 				return 1;
 			}
@@ -87,6 +88,7 @@ int verifyWhiteAndBlackList(const char *buffer)
 			if (strstr(url, line))
 			{
 				printf("Term (blacklist): %s\n", line);
+				blackLogtWrite(buffer);
 				free(buffer_new);
 				return -1;
 			}
@@ -140,7 +142,7 @@ void deniedLogWrite(char* term){
 	FILE* denied_log;
 	denied_log = fopen ("websocket/denied_log.txt", "a"); 
 	if (denied_log == NULL) {
-		printf("Error in black_log file\n");
+		printf("Error in denied_log file\n");
 	} else
 	{
 		fprintf(denied_log, "Contains denied term: %s\n",term );
@@ -166,7 +168,7 @@ void whiteLogWrite(const char* buffer) {
 	
 	if (log_white == NULL) 
 	{
-		printf("Error in log_white file\n");
+		printf("Error in white_log file\n");
 	} else
 	{
 		fprintf(log_white, "Tried to request url from blacklist: %s", buffer);
