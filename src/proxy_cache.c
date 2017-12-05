@@ -97,7 +97,7 @@ int verifyDenyTerm(const char *buffer)
 	// returns 1 otherwise
 
 	FILE *file_terms = NULL;
-	file_terms = fopen("/home/bruno/trabalho_tr2/src/denyTerms.txt", "r");
+	file_terms = fopen("C:/Users/Bruno/Desktop/UnB/UnB - 2 2017/Teleinformática e redes 2/Trab/websocket/src/denyTerms.txt", "r");
 
 
 
