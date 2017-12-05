@@ -260,6 +260,16 @@ int directory(char *host, char *path)
 	return flag;
 }
 
+/*! \fn void connect_host(char *host, char *port, char *path, char *v, int newsockfd)
+		\brief Responsável por fazer a conexão com o host, setando seus parametros
+
+		\param host Host passado como parametro ("from host")
+		\param port Porta passada como parametro inicial (argc)
+		\param path
+		\param v
+		\param newsockfd Socket que recebe os dados de volta 
+*/
+
 void connect_host(char *host, char *port, char *path, char *v, int newsockfd)
 {
 	struct addrinfo *p;
@@ -462,10 +472,11 @@ void request(int newsockfd)
 	}
 }
 
+/*! \fn int start_server(int sockfd)
+		\brief Responsável por iniciar o socket. Retorna o inteiro retornado pela função accept
 
-
-
-
+		\param sockfd Socket que será iniciado pela função
+*/
 
 int start_server(int sockfd)
 {
@@ -495,9 +506,6 @@ int start_server(int sockfd)
 	}
 	return newsockfd;
 }
-
-
-
 
 
 
