@@ -19,10 +19,10 @@ struct sockaddr_storage their_addr;
 
 FILE *fd;
 
-/*! \fn int verifyWhiteAndBlackList(const char *buffer)
-		\brief Retorna um inteiro indicando se está na blacklist (-1), se está na whitelist(1), ou em nenhuma (0)
+/* int verifyWhiteAndBlackList(const char *buffer)
+		- Retorna um inteiro indicando se está na blacklist (-1), se está na whitelist(1), ou em nenhuma das listas (0)
 
-		\param buffer Buffer da dados que será comparado ao arquivo de blacklst e whitelist
+		- Buffer da dados será comparado ao arquivo de blacklst e whitelist
 */
 
 int verifyWhiteAndBlackList(const char *buffer)
@@ -99,10 +99,10 @@ int verifyWhiteAndBlackList(const char *buffer)
 	return 1;
 }
 
-/*! \fn int verifyDenyTerm(const char *buffer)
-		\brief Retorna um inteiro indicando se o buffer contém um deny term
+/* int verifyDenyTerm(const char *buffer)
+		- Retorna um inteiro indicando se o buffer contém um deny term
 
-		\param buffer Buffer da dados que será comparado ao arquivo de deny terms
+		- Buffer da dados será comparado ao arquivo de deny terms
 */
 
 int verifyDenyTerm(const char *buffer)
@@ -138,10 +138,10 @@ int verifyDenyTerm(const char *buffer)
 	return 1;
 }
 
-/*! \fn void deniedLogWrite(char* term) 
-		\brief Cria e escreve um arquivo de log com os denied terms
+/*void deniedLogWrite(char* term) 
+		- Cria e escreve um arquivo de log com os denied terms
 
-		\param term Denied term a ser escrito no arquivo de log
+		- Denied term a ser escrito no arquivo de log
 */
 
 void deniedLogWrite(char* term) 
@@ -158,10 +158,10 @@ void deniedLogWrite(char* term)
 	}
 }
 
-/*! \fn void blackLogtWrite(const char* buffer)
-		\brief Cria e escreve um arquivo de log com as url blacklisted
+/* void blackLogtWrite(const char* buffer)
+		- Cria e escreve um arquivo de log com as url blacklisted
 
-		\param buffer Buffer que contém a URL da blacklist
+	- Buffer contém a URL da blacklist
 */
 
 void blackLogtWrite(const char* buffer)
@@ -178,10 +178,10 @@ void blackLogtWrite(const char* buffer)
 	}
 }
 
-/*! \fn void whiteLogWrite(const char* buffer)
-		\brief Cria e escreve um arquivo de log com as url da white list
+/*void whiteLogWrite(const char* buffer)
+	- Cria e escreve um arquivo de log com as url da white list
 
-		\param buffer Buffer que contém a URL da whitelist
+	- Buffer contém a URL da whitelist
 */
 
 void whiteLogWrite(const char* buffer) 
@@ -199,7 +199,7 @@ void whiteLogWrite(const char* buffer)
 	}
 	
 }
-
+/* Função de passagem de endereços na socket */
 void *get_in_addr(struct sockaddr *sa)
 {
 	if (sa->sa_family == AF_INET)
@@ -210,6 +210,10 @@ void *get_in_addr(struct sockaddr *sa)
 }
 
 int directory(char *host, char *path)
+/* Essa função cria os diretórios para o proxy cache. Optou-se por fazer dessa forma ao invés
+de salvar apenas as URLs em txt para efeitos de controle se a página já foi ou não acessada
+e se está gravada em memória, e verificação dos cabeçalhos. A saída fornece uma flag se a página
+está em cache (já foi acessada) ou não (primeira vez de acesso). */
 {
 	struct stat st = {0};
 	char *temporary = NULL;
@@ -354,6 +358,7 @@ void connect_host(char *host, char *port, char *path, char *v, int newsockfd)
 }
 
 void cache(char *buffer)
+/*Carrega o buffer de armazenamento temporariamente para o cache*/
 {
 	char temporary[128];
 	while (1)
@@ -368,6 +373,7 @@ void cache(char *buffer)
 }
 
 int send_file(char *host, char *port, char *path, char *v, int newsockfd)
+/* Passagem de arquivos para montagem de novo cabeçalho */
 {
 	struct addrinfo host_addr, *servinfo;
 	struct addrinfo *p;
@@ -388,6 +394,8 @@ int send_file(char *host, char *port, char *path, char *v, int newsockfd)
 
 // t1= verbo http, t2 = url, t3 = versão do protocolo
 void request(int newsockfd)
+/* trabalha nas requisições de servidor, armazenamento em buffer pro cache de acordo com os requisitos de rede e filtragem. Deve
+retornar um HTML. */
 {
 
 	char s[INET6_ADDRSTRLEN];
@@ -472,11 +480,14 @@ void request(int newsockfd)
 	}
 }
 
+
 /*! \fn int start_server(int sockfd)
 		\brief Responsável por iniciar o socket. Retorna o inteiro retornado pela função accept
 
 		\param sockfd Socket que será iniciado pela função
 */
+
+
 
 int start_server(int sockfd)
 {
@@ -510,7 +521,10 @@ int start_server(int sockfd)
 
 
 
+
 int set_server(const char *Host, const char *service)
+/*Configura o servidor chamanado as funções declaradas anteriormente, bem como algumas da biblioteca socket.h
+Utiliza como base Socket API */
 {
 	struct addrinfo *p;
 
@@ -578,7 +592,7 @@ int main(int argc, char **argv)
 
 	if (argc < 2)
 	{
-		fprintf(stderr, "Indique a porta para o proxy:\n");
+		fprintf(stderr, "Indique a porta para o proxy!!!!\n");
 		exit(1);
 	}
 
