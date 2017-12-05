@@ -138,10 +138,18 @@ int verifyDenyTerm(const char *buffer)
 	return 1;
 }
 
-void deniedLogWrite(char* term){
+/*! \fn void deniedLogWrite(char* term) 
+		\brief Cria e escreve um arquivo de log com os denied terms
+
+		\param term Denied term a ser escrito no arquivo de log
+*/
+
+void deniedLogWrite(char* term) 
+{
 	FILE* denied_log;
 	denied_log = fopen ("websocket/denied_log.txt", "a"); 
-	if (denied_log == NULL) {
+	if (denied_log == NULL)
+	{
 		printf("Error in denied_log file\n");
 	} else
 	{
@@ -150,10 +158,18 @@ void deniedLogWrite(char* term){
 	}
 }
 
-void blackLogtWrite(const char* buffer) {
+/*! \fn void blackLogtWrite(const char* buffer)
+		\brief Cria e escreve um arquivo de log com as url blacklisted
+
+		\param buffer Buffer que contém a URL da blacklist
+*/
+
+void blackLogtWrite(const char* buffer)
+{
 	FILE* black_log;
 	black_log = fopen ("websocket/black_log.txt", "a");
-	if (black_log == NULL) {
+	if (black_log == NULL) 
+	{
 		printf("Error in black_log file\n");
 	} else
 	{
@@ -162,7 +178,14 @@ void blackLogtWrite(const char* buffer) {
 	}
 }
 
-void whiteLogWrite(const char* buffer) {
+/*! \fn void whiteLogWrite(const char* buffer)
+		\brief Cria e escreve um arquivo de log com as url da white list
+
+		\param buffer Buffer que contém a URL da whitelist
+*/
+
+void whiteLogWrite(const char* buffer) 
+{
 	FILE* log_white;
 	log_white = fopen ("websocket/white_log.txt", "a");
 	
@@ -176,12 +199,6 @@ void whiteLogWrite(const char* buffer) {
 	}
 	
 }
-
-/*! \fn void *get_in_addr(struct sockaddr *sa)
-		\brief Retorna um inteiro indicando se o buffer contém um deny term
-
-		\param sa Buffer da dados que será comparado ao arquivo de deny terms
-*/
 
 void *get_in_addr(struct sockaddr *sa)
 {
